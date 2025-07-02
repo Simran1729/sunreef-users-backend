@@ -14,7 +14,6 @@ app.use(bodyParser.json());
 
 
 const PORT = process.env.PORT || 3000;
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const ZOHO_CLIENT_ID = process.env.ZOHO_CLIENT_ID;
 const ZOHO_CLIENT_SECRET = process.env.ZOHO_CLIENT_SECRET;
 const ZOHO_REDIRECT_URI = process.env.ZOHO_REDIRECT_URI;
@@ -22,17 +21,16 @@ const ZOHO_REFRESH_TOKEN = process.env.ZOHO_REFRESH_TOKEN;
 const ZOHO_TOKEN_URL = process.env.ZOHO_TOKEN_URL;
 const ZOHO_ORG_ID = process.env.ZOHO_ORG_ID;
 
-console.log("🔍 Loaded Environment Variables:");
-console.log("-------------------------------------------------");
-console.log("✅ PORT: ", process.env.PORT ? "✅ Loaded" : "⚠️ Not Set (Using Default 3000)");
-console.log("✅ OPENAI_API_KEY: ", process.env.OPENAI_API_KEY ? "✅ Loaded" : "❌ NOT LOADED");
-console.log("✅ ZOHO_CLIENT_ID: ", process.env.ZOHO_CLIENT_ID ? "✅ Loaded" : "❌ NOT LOADED");
-console.log("✅ ZOHO_CLIENT_SECRET: ", process.env.ZOHO_CLIENT_SECRET ? "✅ Loaded" : "❌ NOT LOADED");
-console.log("✅ ZOHO_REDIRECT_URI: ", process.env.ZOHO_REDIRECT_URI ? "✅ Loaded" : "❌ NOT LOADED");
-console.log("✅ ZOHO_REFRESH_TOKEN: ", process.env.ZOHO_REFRESH_TOKEN ? "✅ Loaded" : "❌ NOT LOADED");
-console.log("✅ ZOHO_TOKEN_URL: ", process.env.ZOHO_TOKEN_URL ? "✅ Loaded" : "❌ NOT LOADED");
-console.log("✅ ZOHO_ORG_ID: ", process.env.ZOHO_ORG_ID ? "✅ Loaded" : "❌ NOT LOADED");
-console.log("-------------------------------------------------");
+// console.log("🔍 Loaded Environment Variables:");
+// console.log("-------------------------------------------------");
+// console.log("✅ PORT: ", process.env.PORT ? "✅ Loaded" : "⚠️ Not Set (Using Default 3000)");
+// console.log("✅ ZOHO_CLIENT_ID: ", process.env.ZOHO_CLIENT_ID ? "✅ Loaded" : "❌ NOT LOADED");
+// console.log("✅ ZOHO_CLIENT_SECRET: ", process.env.ZOHO_CLIENT_SECRET ? "✅ Loaded" : "❌ NOT LOADED");
+// console.log("✅ ZOHO_REDIRECT_URI: ", process.env.ZOHO_REDIRECT_URI ? "✅ Loaded" : "❌ NOT LOADED");
+// console.log("✅ ZOHO_REFRESH_TOKEN: ", process.env.ZOHO_REFRESH_TOKEN ? "✅ Loaded" : "❌ NOT LOADED");
+// console.log("✅ ZOHO_TOKEN_URL: ", process.env.ZOHO_TOKEN_URL ? "✅ Loaded" : "❌ NOT LOADED");
+// console.log("✅ ZOHO_ORG_ID: ", process.env.ZOHO_ORG_ID ? "✅ Loaded" : "❌ NOT LOADED");
+// console.log("-------------------------------------------------");
 
 // Route 1: Check if the server is running
 app.get('/', (req, res) => {
@@ -132,109 +130,6 @@ app.get("/get-users", async (req, res) => {
   }
 });
 
-
-
-// Route 2: Process JSON data and send to GPT API
-app.post('/process-text', async (req, res) => {
-  try {
-    console.log('Received request on /process-text');
-    console.log('Request body:', req.body);
-
-    const text = req.body.text;
-    if (!text) {
-      console.error('No text provided in the request body.');
-      return res.status(400).json({ error: 'Text field is required.' });
-    }
-
-    console.log('Text received from frontend:', text);
-    console.log("using this key -----------> ", OPENAI_API_KEY);
-
-    // Send the text to GPT API
-    const response = await axios.post(
-      'https://api.openai.com/v1/chat/completions',
-      {
-        model: 'gpt-4o',
-        messages: [{ role: 'user', 
-            content: `Extract the following details from the provided text and return them in a key-value format without any additional signs, symbols, or newline characters. Ensure that the extracted department and team match the predefined valid list below and return their respective IDs instead of names.
-
-                      ### **Valid Departments and Their Corresponding Team IDs:**
-
-                      Planning Department -> 1142108000000409029
-                        - Planning Team -> 1142108000000466538
-
-                      Production Department -> 1142108000000422807
-                        - Production Team 1 -> 1142108000000466552
-                        - Production Team 2 -> 1142108000000466566
-                        - Production Team 3 -> 1142108000000466580
-
-                      Service Department -> 1142108000000437582
-                        - Service Team -> 1142108000000466594
-
-                      Engineering Department -> 1142108000000452357
-                        - Composite -> 1142108000000466356
-                        - Interior Engineering -> 1142108000000466370
-                        - Yacht Design -> 1142108000000466384
-                        - Interior Design -> 1142108000000466398
-                        - Yacht Design 3D Visuals -> 1142108000000466412
-                        - Deck Outfitting -> 1142108000000466426
-                        - Electrical -> 1142108000000466440
-                        - Integrated Solutions -> 1142108000000466454
-                        - Machinery and Piping -> 1142108000000466468
-                        - Basis -> 1142108000000466342 
-                        - Interior Engineering SY -> 1142108000000466482
-                        - Composite AND -> 1142108000000466496
-                        - Systems AND -> 1142108000000466510
-                        - Naval Architecture -> 1142108000000466524
-
-                      Ensure that the selected **team corresponds to the department**. If a mismatch is found, correct it based on the best available match.
-
-                      ### **Extract the following details:**
-                      1. Project_name
-                      2. Project_id
-                      3. Department (Return the ID of the matched department)
-                      4. Team_name (Return the ID of the matched team)
-                      5. Description
-                      6. Severity
-                      7. Subject (A concise summary of the issue, generated dynamically)
-
-                      ### **Example Input:**
-                      "This is for project SY-127 Software Development, department is Engineering, team is Interior Engineering. The task is to create a different design blueprint for our new yacht launch. The priority is high, and it needs to be completed by next Friday."
-
-                      ### **Example Output:**
-                      {
-                        "Project_name": "Software Development",
-                        "Project_id": "SY-127",
-                        "Department": "1142108000000452357",
-                        "Team_name": "481842000003280029",
-                        "Description": "The task is to create a different design blueprint for our new yacht launch. The priority is high, and it needs to be completed by next Friday.",
-                        "Severity": "High",
-                        "Subject": "Blueprint design required for new yacht launch."
-                      }
-
-                      Input: ${text}
-`
-           }],
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${OPENAI_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-      }
-    );
-
-    console.log('Response from GPT API:', response.data);
-    console.log('new console: ', response.data.choices[0].message.content)
-
-
-    // Send GPT response back to the client
-    res.json(response.data.choices[0].message.content);
-  } catch (error) {
-    console.error('Error processing request:', error.message);
-    console.error('this is the errror : ', error);
-    res.status(500).json({ error: 'An error occurred while processing the request.' });
-  }
-});
 
 
 async function fetchAccessToken() {
